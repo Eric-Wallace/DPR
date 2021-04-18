@@ -68,6 +68,12 @@ def add_encoder_params(parser: argparse.ArgumentParser):
         default=512,
         help="Max length of the encoder input sequence",
     )
+#    parser.add_argument(
+ #       "--fix_ctx_encoder",
+  #      type=bool,
+   #     default=False,
+    #    help="Fix context model and train only question model in biencoder",
+    #)
 
 
 def add_training_params(parser: argparse.ArgumentParser):

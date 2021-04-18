@@ -21,10 +21,12 @@ from typing import List
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from dpr.data.qa_validation import exact_match_score
 from dpr.data.reader_data import (
     ReaderSample,
+    ReaderPassage,
     get_best_spans,
     SpanPrediction,
     convert_retriever_results,
@@ -214,6 +216,7 @@ class ReaderTrainer(object):
 
         eval_top_docs = args.eval_top_docs
         for i, samples_batch in enumerate(data_iterator.iterate_data()):
+            import pdb; pdb.set_trace()
             input = create_reader_input(
                 self.tensorizer.get_pad_id(),
                 samples_batch,
@@ -253,10 +256,12 @@ class ReaderTrainer(object):
                 q_predictions.predictions
             )  # {top docs threshold -> SpanPrediction()}
             for (n, span_prediction) in span_predictions.items():
+                # Span prediction is now a list of predictions
+                assert len(gold_answers) == 1, "Should have only one gold answer for xwords"
                 em_hit = max(
                     [
-                        exact_match_score(span_prediction.prediction_text, ga)
-                        for ga in gold_answers
+                        exact_match_score(span.prediction_text, gold_answers[0])
+                        for span in span_prediction
                     ]
                 )
                 ems[n].append(em_hit)
@@ -416,7 +421,8 @@ class ReaderTrainer(object):
         logger.info("Loading saved optimizer state ...")
         if saved_state.optimizer_dict:
             self.optimizer.load_state_dict(saved_state.optimizer_dict)
-        self.scheduler_state = saved_state.scheduler_dict
+        print('\n\n\n\n\nNot loading scheduler!!!!!!!!!!!!!!!!\n\n\n\n\n')
+        # self.scheduler_state = saved_state.scheduler_dict
 
     def _get_best_prediction(
         self,
@@ -474,22 +480,54 @@ class ReaderTrainer(object):
                     top_spans=10,
                 )
                 nbest.extend(best_spans)
-                if len(nbest) > 0 and not passage_thresholds:
+                if False and len(nbest) > 0 and not passage_thresholds:
                     break
 
-            if passage_thresholds:
-                passage_rank_matches = {}
-                for n in passage_thresholds:
-                    curr_nbest = [pred for pred in nbest if pred.passage_index < n]
-                    passage_rank_matches[n] = curr_nbest[0]
-                predictions = passage_rank_matches
-            else:
-                if len(nbest) == 0:
-                    predictions = {
-                        passages_per_question: SpanPrediction("", -1, -1, -1, "")
-                    }
+            #if passage_thresholds:
+            #    passage_rank_matches = {}
+            #    for n in passage_thresholds:
+
+            # TODO:
+            # TODO:
+            # TODO:
+            # TODO:
+            # TODO:
+            # TODO:
+            # TODO:
+            # TODO: Consider changing scoring function to softmax earlier (incl. over multiple paragraphs)
+            # TODO:
+            # TODO:
+            # TODO:
+            # TODO: casing
+            
+            # Softmax all scores
+            scores = []
+            for pred in nbest:
+                scores.append(pred.span_score)
+            smax_scores = F.softmax(torch.Tensor(scores)).tolist()
+            for i in range(len(nbest)):
+                pred = nbest[i]
+                nbest[i] = pred._replace(span_score = smax_scores.pop(0))
+            curr_nbest_dict = {}
+
+            # Add duplicates
+            for pred in nbest:
+                if pred.prediction_text in curr_nbest_dict.keys():
+                    curr_nbest_dict[pred.prediction_text] = curr_nbest_dict[pred.prediction_text]._replace(span_score = pred.span_score + curr_nbest_dict[pred.prediction_text].span_score) # Convoluted thing to just add the two span scores
                 else:
-                    predictions = {passages_per_question: nbest[0]}
+                    curr_nbest_dict[pred.prediction_text] = pred
+
+            curr_nbest = sorted(curr_nbest_dict.values(), key=lambda x: -x.span_score)
+            #        passage_rank_matches[n] = curr_nbest[0]
+            #    predictions = passage_rank_matches
+            #else:
+            #    if len(nbest) == 0:
+            #        predictions = {
+            #            passages_per_question: SpanPrediction("", -1, -1, -1, "")
+            #        }
+            #    else:
+            #        predictions = {passages_per_question: nbest[0]}
+            predictions = {passages_per_question: curr_nbest}
             batch_results.append(
                 ReaderQuestionPredictions(sample.question, predictions, sample.answers)
             )
@@ -602,7 +640,7 @@ class ReaderTrainer(object):
         return serialized_files
 
     def _save_predictions(
-        self, out_file: str, prediction_results: List[ReaderQuestionPredictions]
+        self, out_file: str, prediction_results
     ):
         logger.info("Saving prediction results to  %s", out_file)
         with open(out_file, "w", encoding="utf-8") as output:
@@ -615,17 +653,18 @@ class ReaderTrainer(object):
                         "predictions": [
                             {
                                 "top_k": top_k,
-                                "prediction": {
-                                    "text": span_pred.prediction_text,
-                                    "score": span_pred.span_score,
-                                    "relevance_score": span_pred.relevance_score,
-                                    "passage_idx": span_pred.passage_index,
-                                    "passage": self.tensorizer.to_string(
-                                        span_pred.passage_token_ids
-                                    ),
-                                },
+                                "prediction": [
+                                    {
+                                        "text": span_pred.prediction_text,
+                                        "score": span_pred.span_score,
+                                        "relevance_score": span_pred.relevance_score,
+                                        "passage_idx": span_pred.passage_index,
+                                        "passage": self.tensorizer.to_string(
+                                            span_pred.passage_token_ids
+                                        )} for span_pred in span_preds
+                                ]
                             }
-                            for top_k, span_pred in r.predictions.items()
+                            for top_k, span_preds in r.predictions.items()
                         ],
                     }
                 )

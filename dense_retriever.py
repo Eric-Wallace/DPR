@@ -187,7 +187,7 @@ def save_results(
         q_answers = answers[i]
         results_and_scores = top_passages_and_scores[i]
         hits = per_question_hits[i]
-        docs = [passages[doc_id] for doc_id in results_and_scores[0]]
+        docs = [passages[doc_id.replace('wiki:','')] for doc_id in results_and_scores[0]]
         scores = [str(score) for score in results_and_scores[1]]
         ctxs_num = len(hits)
 
@@ -355,7 +355,7 @@ if __name__ == "__main__":
         help="Answer matching logic type",
     )
     parser.add_argument(
-        "--n-docs", type=int, default=200, help="Amount of top docs to return"
+        "--n-docs", type=int, default=20, help="Amount of top docs to return"
     )
     parser.add_argument(
         "--validation_workers",
@@ -366,7 +366,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=32,
+        default=50,
         help="Batch size for question encoder forward pass",
     )
     parser.add_argument(

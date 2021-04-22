@@ -163,6 +163,9 @@ class BiEncoderTrainer(object):
         logger.info(" Total updates=%d", total_updates)
         warmup_steps = args.warmup_steps
         total_updates = 0
+        
+        TODO, there is a bug which is fixed in master where the LR scheduler goes 0 and we keep having trouble with this
+
         print('\n\n\n\nYOOOOOOOOOOOOOOO\n\n\n\nnot using LR')
         scheduler = get_schedule_linear(self.optimizer, warmup_steps, total_updates)
 

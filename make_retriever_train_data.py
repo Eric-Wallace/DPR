@@ -14,7 +14,7 @@ def write_json(stuff, filename):
         data = json.dumps(stuff, indent=4)
         f.write(data)
 
-IN_FILE = "./smallout.json"
+IN_FILE = "./train500k.json"
 TRAIN_FILE = "./data/retriever_train.json"
 VALID_FILE = "./data/retriever_valid.json"
 
@@ -27,15 +27,10 @@ for entry in data:
     ctxs = entry["ctxs"]
     pos_ctx = None
     neg_ctx = None
-#    print(len(ctxs))
- #   print([ctx["has_answer"] for ctx in ctxs])
     for ctx in ctxs:
-  #      print(ctx)
         if ctx["has_answer"] and pos_ctx == None:
-   #         print("changed answer")
             pos_ctx = [{"title": ctx["title"], "text": ctx["text"]}]
         if not ctx["has_answer"] and neg_ctx == None:
-    #        print("changed neg answer")
             neg_ctx = [{"title": ctx["title"], "text": ctx["text"]}]
     if pos_ctx:
         i += 1
@@ -44,11 +39,11 @@ for entry in data:
             {"question": question,
                 "answer": answer,
                 "positive_ctxs": pos_ctx,
-                "negative_ctxs": neg_ctx,
-                "hard_negative_ctxs": []})
+                "negative_ctxs": [],
+                "hard_negative_ctxs": neg_ctx})
 
 print(f"Got {len(data)} items from {IN_FILE}. \n Yielded {len(results)} items to {TRAIN_FILE} and {VALID_FILE}")
 print(f"Got {i} has_answer out of {len(data)}")
-train, valid = results[:-1000], results[-1000:]
+train, valid = results[:-5000], results[-5000:]
 write_json(train, TRAIN_FILE)
 write_json(valid, VALID_FILE)

@@ -1,0 +1,2 @@
+# this is the one GPU setup with gradient accumulation 4
+CUDA_VISIBLE_DEVICES=5 python train_reader.py --seed 42 --learning_rate 1e-5 --eval_step 2000 --do_lower_case --eval_top_docs 25 --encoder_model_type hf_bert --pretrained_model_cfg bert-base-uncased --train_file "data/reader_train500k.json" --dev_file 'data/reader_valid.json' --warmup_steps 0 --sequence_length 350 --batch_size 4 --gradient_accumulation_steps 4 --passages_per_question 24 --num_train_epochs 20 --dev_batch_size 8 --passages_per_question_predict 25 --output_dir checkpoint/trained-reader

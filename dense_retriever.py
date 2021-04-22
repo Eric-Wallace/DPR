@@ -360,7 +360,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--validation_workers",
         type=int,
-        default=16,
+        default=32,
         help="Number of parallel processes to validate results",
     )
     parser.add_argument(

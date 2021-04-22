@@ -1,11 +1,9 @@
-TRAIN_FILE="data/retriever_train.json"
 VALID_FILE="data/retriever_valid.json" # also could be folder
+TRAIN_FILE="data/retriever_train.json"
 OUTPUT_DIR="checkpoint/retriever/"
-PRETRAINED_MODEL="data/embeddings/downloads/checkpoint/retriever/single-adv-hn/nq/bert-base-encoder.cp"
+PRETRAINED_MODEL="data/embeddings/downloads/checkpoint/retriever/single-adv-hn/nq/bert-base-encoder_no_scheduler_dict.cp"
 LOG_FILE="logs/train-$(date +%s).txt" 
 
-#	--model_file ${PRETRAINED_MODEL} \
-# TODO: Add extra featuers for fill len + stuff, then increase seqlen
 CUDA_VISIBLE_DEVICES=1 python3 train_dense_encoder.py \
 	--batch_size 128 \
 	--dev_batch_size 128 \
@@ -20,6 +18,7 @@ CUDA_VISIBLE_DEVICES=1 python3 train_dense_encoder.py \
 	--encoder_model_type hf_bert \
 	--pretrained_model_cfg bert-base-uncased \
 	--fix_ctx_encoder \
+	--model_file ${PRETRAINED_MODEL} \
 	--train_file ${TRAIN_FILE} \
 	--dev_file ${VALID_FILE} \
 	--output_dir ${OUTPUT_DIR}  | tee ${LOG_FILE}

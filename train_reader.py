@@ -216,7 +216,6 @@ class ReaderTrainer(object):
 
         eval_top_docs = args.eval_top_docs
         for i, samples_batch in enumerate(data_iterator.iterate_data()):
-            import pdb; pdb.set_trace()
             input = create_reader_input(
                 self.tensorizer.get_pad_id(),
                 samples_batch,
@@ -421,8 +420,7 @@ class ReaderTrainer(object):
         logger.info("Loading saved optimizer state ...")
         if saved_state.optimizer_dict:
             self.optimizer.load_state_dict(saved_state.optimizer_dict)
-        print('\n\n\n\n\nNot loading scheduler!!!!!!!!!!!!!!!!\n\n\n\n\n')
-        # self.scheduler_state = saved_state.scheduler_dict
+        self.scheduler_state = saved_state.scheduler_dict
 
     def _get_best_prediction(
         self,

@@ -162,10 +162,14 @@ class BiEncoderTrainer(object):
         )
         logger.info(" Total updates=%d", total_updates)
         warmup_steps = args.warmup_steps
+        total_updates = 0
+        print('\n\n\n\nYOOOOOOOOOOOOOOO\n\n\n\nnot using LR')
         scheduler = get_schedule_linear(self.optimizer, warmup_steps, total_updates)
 
         if self.scheduler_state:
             logger.info("Loading scheduler state %s", self.scheduler_state)
+            print('\n\n\n\nYOOOOOOOOOOOOOOO\n\n\n\nnot using LR')
+            self.scheduler_state['_last_lr'] = self.scheduler_state['base_lrs']
             scheduler.load_state_dict(self.scheduler_state)
 
         eval_step = math.ceil(updates_per_epoch / args.eval_per_epoch)
@@ -528,8 +532,10 @@ class BiEncoderTrainer(object):
             epoch += 1
         logger.info("Loading checkpoint @ batch=%s and epoch=%s", offset, epoch)
 
-        self.start_epoch = epoch
-        self.start_batch = offset
+        if epoch is not None:
+            self.start_epoch = epoch
+        if offset is not None:
+            self.start_batch = offset
 
         model_to_load = get_model_obj(self.biencoder)
         logger.info("Loading saved model state ...")
